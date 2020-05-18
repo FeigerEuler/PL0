@@ -12,7 +12,7 @@ typedef enum {
 } bool;
 
 
-#define norw 13     /* 关键字个数 */
+#define norw 14     /* 关键字个数 */
 #define txmax 100   /* 名字表容量 */
 #define nmax 14     /* number的最大位数 */
 #define al 10       /* 符号的最大长度 */
@@ -28,9 +28,9 @@ enum symbol {
     rparen,      comma,     semicolon,  period,    becomes,
     beginsym,    endsym,    ifsym,      thensym,   whilesym,
     writesym,    readsym,   dosym,      callsym,   constsym,
-    varsym,      procsym,
+    varsym,      procsym,   elsesym,    colon
 };
-#define symnum 32
+#define symnum 34
 
 /* 名字表中的类型 */
 enum object {
@@ -44,9 +44,11 @@ enum object {
 enum fct {
     lit,     opr,     lod,
     sto,     cal,     inte,
-    jmp,     jpc,
+    jmp,     jpc,	  sto2,
+	lod2
+
 };
-#define fctnum 8
+#define fctnum 10
 
 /* 虚拟机代码结构 */
 struct instruction
@@ -78,7 +80,7 @@ char mnemonic[fctnum][5];   /* 虚拟机代码指令名称 */
 bool declbegsys[symnum];    /* 表示声明开始的符号集合 */
 bool statbegsys[symnum];    /* 表示语句开始的符号集合 */
 bool facbegsys[symnum];     /* 表示因子开始的符号集合 */
-
+int cx3;
 /* 名字表结构 */
 struct tablestruct
 {
@@ -88,6 +90,7 @@ struct tablestruct
     int level;          /* 所处层，仅const不使用 */
     int adr;            /* 地址，仅const不使用 */
     int size;           /* 需要分配的数据区空间, 仅procedure使用 */
+	int low;			/* 下界：仅数组需要使用*/
 };
 
 struct tablestruct table[txmax]; /* 名字表 */
@@ -102,7 +105,7 @@ int err; /* 错误计数器 */
 #define getchdo                       if(-1 == getch()) return -1
 #define testdo(a, b, c)               if(-1 == test(a, b, c)) return -1
 #define gendo(a, b, c)                if(-1 == gen(a, b, c)) return -1
-#define expressiondo(a, b, c)         if(-1 == expression(a, b, c)) return -1
+#define expressiondo(a, b, c, d,e)      if(-1 == expression(a, b, c, d,e)) return -1
 #define factordo(a, b, c)             if(-1 == factor(a, b, c)) return -1
 #define termdo(a, b, c)               if(-1 == term(a, b, c)) return -1
 #define conditiondo(a, b, c)          if(-1 == condition(a, b, c)) return -1
@@ -125,7 +128,11 @@ void interpret();
 int factor(bool* fsys, int* ptx, int lev);
 int term(bool* fsys, int* ptx, int lev);
 int condition(bool* fsys, int* ptx, int lev);
-int expression(bool* fsys, int* ptx, int lev);
+/*
+* 新增两个参数，nowArray用于判断当前是否为数组，主要用于减掉下界值
+* index，仅当nowArray为真时有效，表示数组在名字表中的位置，用于求得数组下界值
+*/
+int expression(bool* fsys, int* ptx, int lev,bool nowArray,int index);
 int statement(bool* fsys, int* ptx, int lev);
 void listcode(int cx0);
 int vardeclaration(int* ptx, int lev, int* pdx);
@@ -133,3 +140,5 @@ int constdeclaration(int* ptx, int lev, int* pdx);
 int position(char* idt, int tx);
 void enter(enum object k, int* ptx, int lev, int* pdx);
 int base(int l, int* s, int b);
+int isV(int index);
+int resolveArray();
